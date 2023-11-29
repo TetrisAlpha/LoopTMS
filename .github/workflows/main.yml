@@ -15,7 +15,7 @@ jobs:
 
       - name: Zip the Lambda function
         run: |
-          zip -r ./lambda_function.zip ./
+          zip -r ./PullShipmentJobData.zip ./
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
