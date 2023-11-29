@@ -62,8 +62,7 @@ def fetch_shipment_jobs(api_key):
     while True:
         try:
             response = exponential_backoff_request(url, headers, params)
-            
-    
+                
             response_json = response.json()
             all_shipment_jobs.extend(response_json.get('data', []))
     
@@ -128,7 +127,7 @@ def generate_cost_allocation_codes(shipment_jobs):
 
 def lambda_handler(event, context):
     try:
-        
+
         api_key = json.loads(get_secret()).get("password")
         
         shipment_jobs = fetch_shipment_jobs(api_key)
