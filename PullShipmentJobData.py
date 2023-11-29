@@ -156,9 +156,8 @@ def lambda_handler(event, context):
         }
 
 
-if __name__ == "__main__":
-    api_key = json.loads(get_secret()).get("password")
-    shipment_jobs = fetch_shipment_jobs(api_key)
-    merged_carrier_details = fetch_merge_shipment_carrier(shipment_jobs,api_key)
-    cost_allocation = generate_cost_allocation_codes(merged_carrier_details)
+#if __name__ == "__main__":
+ #   api_key = json.loads(get_secret()).get("password")
+  #  shipment_jobs = fetch_shipment_jobs(api_key)
+   ##cost_allocation = generate_cost_allocation_codes(merged_carrier_details)
     #save_to_json_file(cost_allocation, 'shipment_jobs.json')
