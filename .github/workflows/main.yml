@@ -26,4 +26,4 @@ jobs:
 
       - name: Deploy to Lambda
         run: |
-          aws lambda update-function-code --function-name PullShipmentJobData --zip-file fileb://lambda_function.zip
+          aws lambda update-function-code --function-name PullShipmentJobData --zip-file fileb://PullShipmentJobData.zip
