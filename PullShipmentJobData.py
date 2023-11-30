@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError
 # Initialize the S3 client
 s3 = boto3.resource('s3')
 
+# Retrieves a specified API key from AWS Secrets Manager for authentication purposes.
 def get_secret():
 
     secret_name = "LoopsAPI"
@@ -25,6 +26,7 @@ def get_secret():
 
     return get_secret_value_response['SecretString']
 
+# Performs HTTP GET requests with exponential backoff retry logic for handling network failures.
 def exponential_backoff_request(url, headers, params=None, max_retries=3, initial_delay=1):
 
     for i in range(max_retries):
@@ -38,6 +40,7 @@ def exponential_backoff_request(url, headers, params=None, max_retries=3, initia
             time.sleep(wait)
     raise RequestException("Max retries exceeded")
 
+# Saves data as a JSON file to an AWS S3 bucket, with the filename including a timestamp.
 def save_to_s3(data, bucket_name, filename):
     try:
         json_data = json.dumps(data, indent=4)
@@ -50,6 +53,7 @@ def save_to_s3(data, bucket_name, filename):
         print(f"Error uploading to S3: {str(e)}")
         raise
 
+# Fetches shipment job data from an API, filtering jobs by specified date parameters.
 def fetch_shipment_jobs(api_key):
     url = "https://api.loop.us/v1/shipment-jobs"  # API endpoint for shipment jobs
     
@@ -77,6 +81,7 @@ def fetch_shipment_jobs(api_key):
 
     return all_shipment_jobs
 
+# Enhances shipment jobs with carrier details fetched from a different API endpoint.
 def fetch_merge_shipment_carrier(shipment_jobs,api_key):
     org_url = "https://api.loop.us/v1/organizations"  # API endpoint for organizations
     headers = {"Authorization": f"Bearer {api_key}"}
@@ -110,6 +115,7 @@ def fetch_merge_shipment_carrier(shipment_jobs,api_key):
             job["carrierDetails"] = {"error": "Carrier QID not found"}
     return shipment_jobs
 
+# Adds cost allocation codes to shipment jobs based on freight terms and job types.
 def generate_cost_allocation_codes(shipment_jobs):
     freight_term_codes = {"3rd party": "123.445", "collect": "987.434", "unknown": "756.434"}
     job_type_codes = {"ftl": "999.123", "ltl": "001.456", "unknown": "000.000"}
@@ -125,6 +131,7 @@ def generate_cost_allocation_codes(shipment_jobs):
 
     return shipment_jobs
 
+# Main AWS Lambda function handler that orchestrates the entire process, including fetching, processing, and saving shipment job data.
 def lambda_handler(event, context):
     try:
 
@@ -154,10 +161,3 @@ def lambda_handler(event, context):
             'statusCode': 500,
             'body': json.dumps(f"Error: {str(e)}")
         }
-
-
-#if __name__ == "__main__":
- #   api_key = json.loads(get_secret()).get("password")
-  #  shipment_jobs = fetch_shipment_jobs(api_key)
-   ##cost_allocation = generate_cost_allocation_codes(merged_carrier_details)
-    #save_to_json_file(cost_allocation, 'shipment_jobs.json')
