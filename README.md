@@ -15,8 +15,16 @@ This Python script is designed to interact with the Loop Transportation Manageme
 -    Required Python packages: boto3, requests, json, datetime
 
 **Setup**
+**Loacl Setup**
+To run the script locally for testing or development purposes, follow these steps:
+1.  Set API Key:
+Replace the placeholder API key in the script with your actual Loop TMS API key.
 
-**Local Setup**
+2.  Execute the Script:
+python Local_ PullShipmentJobData.py
+
+
+**AWS Cloud Setup**
 1.    Install Required Libraries:
 Use pip to install the necessary Python libraries.
 pip install boto3 requests
