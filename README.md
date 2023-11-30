@@ -15,7 +15,10 @@ This Python script is designed to interact with the Loop Transportation Manageme
 -    Required Python packages: boto3, requests, json, datetime
 
 **Setup**
-**Loacl Setup**
+
+
+**Local Setup**
+
 To run the script locally for testing or development purposes, follow these steps:
 1.  Set API Key:
 Replace the placeholder API key in the script with your actual Loop TMS API key.
