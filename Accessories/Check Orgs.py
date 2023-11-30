@@ -3,33 +3,6 @@ import json
 import requests
 from datetime import datetime
 from requests.exceptions import RequestException
-"""
-Uncomment this section when deploying as lambda function on AWS Cloud
-
-
-from botocore.exceptions import ClientError
-import boto3
-
-# Initialize the S3 client
-#s3 = boto3.resource('s3')
-
-def get_secret():
-
-    secret_name = "LoopsAPI"
-    region_name = "us-west-1"
-
-    client = boto3.client('secretsmanager', region_name=region_name)
-
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-    except ClientError as e:
-        raise e
-
-    return get_secret_value_response['SecretString']
-
-"""
 
 def exponential_backoff_request(url, headers, params=None, max_retries=3, initial_delay=1):
 
@@ -43,21 +16,7 @@ def exponential_backoff_request(url, headers, params=None, max_retries=3, initia
             print(f"Request failed, retrying in {wait} seconds...")
             time.sleep(wait)
     raise RequestException("Max retries exceeded")
-"""
-Uncomment this section when deploying as lambda function on AWS Cloud
-def save_to_s3(data, bucket_name, filename):
-    try:
-        json_data = json.dumps(data, indent=4)
-        filename = f" {filename}_{datetime.now()}.json"
-        # Upload the JSON string to S3
-        s3.Object(bucket_name, filename).put(Body=json_data)
-        
-        print(f"File {filename} uploaded to {bucket_name}")
-    except Exception as e:
-        print(f"Error uploading to S3: {str(e)}")
-        raise
-"""
-#Comment out this function when deploying to AWS cloud
+
 def save_to_json_file(data, filename):
     filename = f" {filename}_{datetime.now()}.json"
     with open(filename, 'w') as file:
@@ -94,6 +53,7 @@ def fetch_shipment_jobs(api_key):
 def fetch_merge_shipment_carrier(shipment_jobs,api_key):
     org_url = "https://api.loop.us/v1/organizations"  # API endpoint for organizations
     headers = {"Authorization": f"Bearer {api_key}"}
+    org_data_collected = {} 
    
     for job in shipment_jobs:
         carrier_qid = job.get("jobTypeInfo", {}).get("carrierOrganizationQid")
@@ -101,6 +61,7 @@ def fetch_merge_shipment_carrier(shipment_jobs,api_key):
             try:
                 org_response = exponential_backoff_request(f"{org_url}/{carrier_qid}", headers)
                 org_data = org_response.json()
+                org_data_collected[carrier_qid] = org_data
                 carrier_data = org_data.get("truckingCarrierInfo", {})
 
                  # Check if bolNumber is "334154782"
@@ -122,56 +83,8 @@ def fetch_merge_shipment_carrier(shipment_jobs,api_key):
                 job["carrierDetails"] = {"error": str(e)}
         else:
             job["carrierDetails"] = {"error": "Carrier QID not found"}
-    return shipment_jobs
+    return shipment_jobs, org_data_collected
 
-def generate_cost_allocation_codes(shipment_jobs):
-    freight_term_codes = {"3rd party": "123.445", "collect": "987.434", "unknown": "756.434"}
-    job_type_codes = {"ftl": "999.123", "ltl": "001.456", "unknown": "000.000"}
-
-    for shipment in shipment_jobs:
-        freight_term = shipment.get("jobTypeInfo", {}).get("freightChargeTerms", "Not Found").lower()
-        job_type = shipment.get("jobType", "Not Found").lower()
-
-        shipment["AllocationCodes"] = {
-            "Freight Charge Terms": freight_term_codes.get(freight_term, "Not Found"),
-            "Job Type": job_type_codes.get(job_type, "Not Found")
-        }
-
-    return shipment_jobs
-"""
-Uncomment this section when deploying as lambda function on AWS Cloud
-def lambda_handler(event, context):
-    try:
-
-        api_key = json.loads(get_secret()).get("password")
-        
-        shipment_jobs = fetch_shipment_jobs(api_key)
-        if not shipment_jobs:
-            return ('Process failed to fetch Shipment jobs, downstream enrichment failed')
-            
-        merged_carrier_details = fetch_merge_shipment_carrier(shipment_jobs,api_key)
-        cost_allocation = generate_cost_allocation_codes(merged_carrier_details)
-        
-        
-        # Save to S3 instead of local file system
-        bucket_name = 'loop-tms-ftp'  # S3 bucket name
-        file_name = 'shipment_jobs.json'
-        save_to_s3(cost_allocation, bucket_name, file_name)
-
-        return {
-            'statusCode': 200,
-            'body': json.dumps('Process completed successfully!')
-        }
-
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps(f"Error: {str(e)}")
-        }
-"""
-
-#Comment out this section when deploying as lambda function on AWS Cloud
 if __name__ == "__main__":
     try:
 
@@ -181,17 +94,11 @@ if __name__ == "__main__":
         if not shipment_jobs:
             print ('Process failed to fetch Shipment jobs, downstream enrichment failed')
             
-        merged_carrier_details = fetch_merge_shipment_carrier(shipment_jobs,api_key)
-        cost_allocation = generate_cost_allocation_codes(merged_carrier_details)
+        merged_carrier_details, org_data = fetch_merge_shipment_carrier(shipment_jobs,api_key)
         
-        
-        """
-        Uncomment this section when deploying as lambda function on AWS Cloud
-        # Save to S3 instead of local file system
-        bucket_name = 'loop-tms-ftp'  # S3 bucket name
-        file_name = 'shipment_jobs.json'
-        """
-        save_to_json_file(cost_allocation, 'shipment_jobs.json')
+        save_to_json_file(shipment_jobs, 'shipment_jobs.json')
+        save_to_json_file(org_data, 'organization_data.json')
+
 
         print('Process completed successfully!')
 
